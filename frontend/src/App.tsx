@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react'
 //import './App.css'
 import CNVChart from './CNVChart'
+import CNVViewer from './CNVViewer'
 
 interface PatientSample {
   cnv_aberration_score: number
@@ -71,7 +72,7 @@ function App() {
     <div className="app-container">
       <header>
         <h1>OnCovera Clinic</h1>
-        <p>CNV + methylation 기반 cfDNA ONC 생존/악성도 예측 프레임.</p>
+        <p>CNV + methylation -based cfDNA ONC survival/malignancy prediction</p>
       </header>
 
       <section className="panel">

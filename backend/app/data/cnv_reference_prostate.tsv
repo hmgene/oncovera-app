@@ -1,0 +1,16 @@
+sample_id	chrom	start	end	length_bp	log2_ratio	copy_number	cnv_type	gene_overlap	confidence
+PC_001	chr10	87860000	87920000	60000	-1.15	1	deletion	PTEN	high
+PC_001	chr8	128740000	128980000	240000	0.82	3	amplification	MYC	high
+PC_001	chrX	67540000	67620000	80000	1.25	4	amplification	AR	high
+PC_001	chr13	48890000	48950000	60000	-0.95	1	deletion	RB1	medium
+PC_001	chr17	7560000	7645000	85000	-1.30	1	deletion	TP53	high
+PC_002	chr8	127850000	128200000	350000	0.65	3	amplification	PVT1;MYC	high
+PC_002	chr10	87820000	87890000	70000	-0.80	1	deletion	PTEN	high
+PC_002	chr7	55000000	55650000	650000	0.45	3	amplification	EGFR	medium
+PC_002	chr6	160200000	160900000	700000	-0.60	1	deletion	PARK2	low
+PC_003	chr3	178900000	179300000	400000	-1.10	1	deletion	PIK3CA	medium
+PC_003	chr1	155230000	155800000	570000	0.70	3	amplification	MCL1	high
+PC_003	chr5	129400000	129900000	500000	-0.50	1	deletion	APC	medium
+PC_003	chr12	25300000	25900000	600000	0.55	3	amplification	KRAS	low
+PC_004	chr21	38000000	38600000	600000	0.90	4	amplification	ERG	high
+PC_004	chr2	47600000	48250000	650000	-0.75	1	deletion	DNMT3A	medium

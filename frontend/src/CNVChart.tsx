@@ -1,154 +1,97 @@
-import React, { useEffect, useState } from 'react'
+import React, { useEffect, useMemo, useState } from "react";
+import CNVViewer from "./CNVViewer";
 
 interface CNVData {
-  chromosome: string
-  start: number
-  end: number
-  copy_number: number
-  log2_ratio: number
-  quality_score: number
-  gene_region: string
-}
-
-interface CancerFractionData {
-  cancer_fraction: number
-  method: string
-  description: string
+  chromosome: string;
+  start: number;
+  end: number;
+  copy_number: number;
+  log2_ratio: number;
+  quality_score: number;
+  gene_region: string;
 }
 
 const CNVChart: React.FC = () => {
-  const [cnvData, setCnvData] = useState<CNVData[]>([])
-  const [cancerFraction, setCancerFraction] = useState<CancerFractionData | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [selectedChromosome, setSelectedChromosome] = useState<string>('all')
+  const [cnvData, setCnvData] = useState<CNVData[]>([]);
+  const [chromSizes, setChromSizes] = useState<Record<string, number>>({});
+  const [selectedChromosome, setSelectedChromosome] = useState("all");
 
+  // fetch CNV data
   useEffect(() => {
-    fetchCNVData()
-    fetchCancerFraction()
-  }, [])
+    fetch("http://127.0.0.1:8000/cnv-data", { mode: "cors" })
+      .then((res) => res.json())
+      .then((data) => setCnvData(data.cnv_data || []))
+      .catch(() => setCnvData([]));
+  }, []);
 
-  const fetchCNVData = async () => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/cnv-data', {
-        mode: 'cors',
-      })
-      const data = await response.json()
+  // load hg38 genome file
+  useEffect(() => {
+    fetch("/data/hg38.size")
+      .then((res) => res.text())
+      .then((text) => {
+        const sizes: Record<string, number> = {};
 
-      if (data.cnv_data) {
-        setCnvData(data.cnv_data)
-      } else {
-        // Fallback to mock data if backend fails
-        console.warn('Using mock CNV data due to backend error:', data.error)
-        const mockCNVData: CNVData[] = [
-          { chromosome: 'chr1', start: 1000000, end: 1500000, copy_number: 2.1, log2_ratio: 0.15, quality_score: 45.2, gene_region: 'intergenic' },
-          { chromosome: 'chr1', start: 2500000, end: 2800000, copy_number: 1.8, log2_ratio: -0.25, quality_score: 38.9, gene_region: 'TP53' },
-        ]
-        setCnvData(mockCNVData)
-      }
-    } catch (err) {
-      console.error('Failed to load CNV data:', err)
-      setError('Failed to load CNV data')
-      setCnvData([])
-    } finally {
-      setLoading(false)
-    }
-  }
+        text.split("\n").forEach((line) => {
+          const [chr, size] = line.trim().split(/\s+/);
+          if (chr && size) sizes[chr] = Number(size);
+        });
 
-  const fetchCancerFraction = async () => {
-    try {
-      const response = await fetch('http://127.0.0.1:8000/cancer-fraction', {
-        mode: 'cors',
-      })
-      const data = await response.json()
-      setCancerFraction(data)
-    } catch (err) {
-      console.error('Failed to load cancer fraction:', err)
-    }
-  }
+        setChromSizes(sizes);
+      });
+  }, []);
 
-  const filteredData = selectedChromosome === 'all'
-    ? cnvData
-    : cnvData.filter(item => item.chromosome === selectedChromosome)
+  // build genome offsets
+  const genomeOffsets = useMemo(() => {
+    let offset = 0;
+    const result: Record<string, number> = {};
 
-  const chromosomes = ['all', ...Array.from(new Set(cnvData.map(item => item.chromosome)))]
+    Object.entries(chromSizes).forEach(([chr, size]) => {
+      result[chr] = offset;
+      offset += size;
+    });
 
-  if (loading) {
-    return <div className="cnv-chart-container">Loading CNV data...</div>
-  }
+    return result;
+  }, [chromSizes]);
 
-  if (error) {
-    return <div className="cnv-chart-container error">Error: {error}</div>
-  }
+  // filter chromosome
+  const filteredData = useMemo(() => {
+    if (selectedChromosome === "all") return cnvData;
+    return cnvData.filter((d) => d.chromosome === selectedChromosome);
+  }, [cnvData, selectedChromosome]);
+
+  const chromosomes = [
+    "all",
+    ...Array.from(new Set(cnvData.map((d) => d.chromosome))),
+  ];
 
   return (
-    <div className="cnv-chart-container">
-      <h2>CNV Genomic Visualization</h2>
+    <div style={{ padding: 20 }}>
+      <h2>CNV Genome Viewer (hg38)</h2>
 
-      {cancerFraction && !cancerFraction.error && (
-        <div className="cancer-fraction-info">
-          <h3>Cancer Fraction Estimate</h3>
-          <p><strong>Fraction:</strong> {(cancerFraction.cancer_fraction * 100).toFixed(1)}%</p>
-          <p><strong>Method:</strong> {cancerFraction.method}</p>
-          <p><em>{cancerFraction.description}</em></p>
-        </div>
-      )}
-
-      <div className="chart-controls">
+      {/* controls */}
+      <div style={{ marginBottom: 15 }}>
         <label>
-          Select Chromosome:
+          Chromosome:{" "}
           <select
             value={selectedChromosome}
             onChange={(e) => setSelectedChromosome(e.target.value)}
           >
-            {chromosomes.map(chr => (
-              <option key={chr} value={chr}>
-                {chr === 'all' ? 'All Chromosomes' : chr}
+            {chromosomes.map((c) => (
+              <option key={c} value={c}>
+                {c === "all" ? "Whole Genome" : c}
               </option>
             ))}
           </select>
         </label>
       </div>
 
-      <div className="cnv-table-container">
-        <h3>CNV Data Table</h3>
-        <div className="cnv-table-wrapper">
-          <table className="cnv-table">
-            <thead>
-              <tr>
-                <th>Chromosome</th>
-                <th>Gene Region</th>
-                <th>Log2 Ratio</th>
-                <th>Copy Number</th>
-                <th>Quality Score</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredData.map((item, index) => (
-                <tr key={index} className={
-                  item.log2_ratio > 0.2 ? 'gain' :
-                  item.log2_ratio < -0.2 ? 'loss' : 'neutral'
-                }>
-                  <td>{item.chromosome}</td>
-                  <td>{item.gene_region}</td>
-                  <td>{item.log2_ratio.toFixed(3)}</td>
-                  <td>{item.copy_number.toFixed(2)}</td>
-                  <td>{item.quality_score.toFixed(1)}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div className="cnv-stats">
-        <h3>CNV Statistics</h3>
-        <p><strong>Total CNVs:</strong> {filteredData.length}</p>
-        <p><strong>Average Log2 Ratio:</strong> {(filteredData.reduce((sum, item) => sum + item.log2_ratio, 0) / filteredData.length || 0).toFixed(3)}</p>
-        <p><strong>Significant Alterations:</strong> {filteredData.filter(item => Math.abs(item.log2_ratio) > 0.2).length}</p>
-      </div>
+      {/* viewer */}
+      <CNVViewer
+        data={filteredData}
+        genomeOffsets={genomeOffsets}
+      />
     </div>
-  )
-}
+  );
+};
 
-export default CNVChart
+export default CNVChart;

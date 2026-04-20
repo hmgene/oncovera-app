@@ -26,9 +26,30 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+
 @app.get("/health")
 def health_check():
     return {"status": "ok", "message": "OnCovera backend is running."}
+
+BASE_DIR = os.path.dirname(__file__)
+DATA_DIR = os.path.join(BASE_DIR, "data")
+
+@app.get("/patients")
+def get_patients():
+    patients = []
+    for patient_id in os.listdir(DATA_DIR):
+        patient_dir = os.path.join(DATA_DIR, patient_id)
+        if not os.path.isdir(patient_dir):
+            continue
+
+        cnv_file = os.path.join(patient_dir, "cnv", "cnv_results.tsv")
+        print(cnv_file)
+
+        if os.path.isfile(cnv_file):
+            patients.append(patient_id)
+
+    return {"patients": patients}
+
 
 @app.get("/synthetic", response_model=PatientSample)
 def synthetic_sample():
@@ -85,6 +106,7 @@ def get_cnv_stats():
             "error": str(e),
             "statistics": None
         }
+
 
 
 @app.get("/cnv-data")
