@@ -1,2 +1,20 @@
 # Google App Engine generated folder
 appengine-generated/
+
+# Node.js
+node_modules/
+frontend/node_modules/
+frontend/dist/
+
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Environment
+.env
+
+# IDE
+.vscode/
