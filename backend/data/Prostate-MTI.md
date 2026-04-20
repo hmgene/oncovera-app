@@ -1,15 +1,18 @@
 Prostate-MTI: A Multimodal AI Framework for Prostate Cancer Outcome Prediction
 Technical Overview for Biological Scientists and Clinicians
-April 16. 2026 by Josh Kim
+April 16. 2026 - by Josh Kim
 
 1. Motivation and Clinical Context
+
 Prostate cancer exhibits profound molecular and clinical heterogeneity that current risk stratification tools — ISUP grade groups, PSA kinetics, CAPRA scores, and nomograms — only partially capture. Patients with identical Gleason scores and clinical staging frequently diverge dramatically in their trajectories: one remains indolent for decades, another develops castration-resistant disease within two years. This divergence is encoded in the tumour's molecular architecture at multiple biological scales simultaneously.
 The Prostate-MTI framework is built on the premise that no single omic layer is sufficient to model this complexity. Clinically actionable signals are distributed across the genome, transcriptome, proteome, epigenome, tumour microenvironment (TME), and histomorphology — and critically, the interactions between these layers carry information that each layer alone cannot provide. The framework therefore assembles modality-specific foundation models into an end-to-end pipeline that produces a unified, patient-level embedding suitable for survival analysis, risk stratification, and treatment response prediction.
 
-2. Modality-Specific Inputs and Encoders
+3. Modality-Specific Inputs and Encoders
+
 Each biological data stream is processed by a dedicated foundation model pretrained on large domain-specific corpora before fine-tuning on prostate cancer data. Below are the specific inputs, feature representations, and encoding strategies for each modality.
 
 2.1  Whole Genome Sequencing (WGS) — Nucleotide-Resolution Genomic Encoding
+
 Foundation Model: Evo (7B parameters, Arc Institute / TogetherAI)
 Specific Inputs:
 
@@ -23,14 +26,18 @@ COSMIC mutational signature decomposition (SBS, DBS, ID catalogues)
 Chromothripsis and genome doubling events
 
 Encoding Approach:
+
 Evo is a 7-billion parameter genomic foundation model built on the StripedHyena architecture — a hybrid that alternates data-controlled convolutional operators (hyena layers) with sparse multi-head attention blocks. It operates at single-nucleotide, byte-level resolution with a context window spanning 131 kilobases, sufficient to capture intra-gene regulatory interactions, splice site disruptions, and promoter-exon relationships in a single forward pass. The StripedHyena design is critical because pure transformer attention scales quadratically with sequence length, making megabase-scale processing computationally prohibitive; hyena layers reduce this to near-linear complexity while preserving long-range dependency modelling.
 Evo was pretrained on 300 billion nucleotides spanning prokaryotic and phage genomes, learning deep evolutionary conservation patterns before domain adaptation to human oncogenomics. In the prostate cancer context, Evo is sensitive to recurrent driver alterations: ETS family fusions (TMPRSS2::ERG, TMPRSS2::ETV1), SPOP and FOXA1 mutations, CDK12 biallelic inactivation (associated with tandem duplicator phenotype and neoantigen load), RB1 and TP53 co-deletion (linked to neuroendocrine transdifferentiation), and homologous recombination deficiency (HRD) signatures in BRCA2, ATM, and CDK12 contexts.
 Output: A dense embedding vector encoding systems-level genomic state, including mutational processes, structural rearrangement burden, and copy number landscape.
 
 2.1b  Regulatory Genome Annotation — Sequence-to-Regulatory-Feature Prediction
 Foundation Model: AlphaGenome (Google DeepMind)
+
 Rationale:
+
 While Evo encodes the raw DNA sequence into a genomic state embedding, it does not explicitly model the functional regulatory consequences of sequence variation at base-pair resolution across the full range of regulatory outputs. AlphaGenome fills this gap as a complementary encoder specifically designed to predict the regulatory state of the genome directly from DNA sequence — without requiring experimental measurements of chromatin or transcription factor (TF) binding in the patient's tumour.
+
 Specific Inputs:
 
 DNA sequence windows (up to 1 Mb context) centred on regions of interest: promoters, enhancers, CTCF binding sites, topologically associating domain (TAD) boundaries
@@ -39,6 +46,7 @@ Reference genome annotations: ENCODE cCREs (candidate cis-regulatory elements), 
 Known prostate-relevant regulatory elements: AR-bound enhancers (AREs), TMPRSS2 enhancer region, MYC super-enhancer at 8q24, SCHLAP1 lncRNA locus
 
 Encoding Approach:
+
 AlphaGenome is a sequence-to-function foundation model that ingests raw DNA sequence and simultaneously predicts a comprehensive catalogue of regulatory outputs at base-pair resolution:
 
 Chromatin accessibility: ATAC-Seq and DNase-Seq peak profiles across hundreds of cell types, enabling identification of open chromatin regions in prostate epithelial and tumour cell contexts without matched ATAC data from the patient
@@ -95,14 +103,14 @@ Epithelial: luminal (AR+, KLK3+, NKX3-1+), basal (TP63+, KRT5+, KRT14+), luminal
 Stromal: myCAF (ACTA2+, MMP11+), iCAF (IL6+, CXCL12+, CCL2+), endothelial, pericyte, smooth muscle
 Immune: CD8+ cytotoxic TILs (GZMB+, PRF1+), exhausted CD8+ T cells (PDCD1+, HAVCR2+, TIGIT+), CD4+ Tregs (FOXP3+, IL2RA+), M1 macrophages (CD80+, CXCL10+), M2/TAMs (CD163+, MRC1+, TREM2+), MDSCs (S100A8/A9+), NK cells (NCAM1+, KLRB1+), mast cells (KIT+, TPSAB1+), plasmacytoid dendritic cells
 
-
-
 Encoding Approach:
+
 Transformer-based single-cell language models — scGPT and Geneformer: Both models treat the ranked gene expression profile of each cell as a token sequence — genes with highest expression appearing first. scGPT was pretrained on over 33 million human single-cell transcriptomes using masked gene modelling, enabling zero-shot cell type annotation and gene regulatory network inference. Geneformer was initially pretrained on 30 million single-cell transcriptomes and continually pretrained on approximately 14 million cancer-specific transcriptomes via masked gene modelling (randomly masking 15% of gene tokens and predicting their expression rank), conferring strong representations of oncogenic cell states. Fine-tuning of both models emphasises AR transcriptional programme activity, luminal differentiation state, and immunosuppressive TME configurations relevant to prostate cancer.
 Universal multiscale cell embedding — UCE (Universal Cell Embedding): UCE generates cell embeddings generalisable across tissues and species by grounding gene representations in protein sequence space — practically important for transferring cell-type annotations to bulk RNA-Seq cohorts (TCGA-PRAD) where matched single-cell data is absent. UCE also enables deconvolution of bulk transcriptomes into pseudo-single-cell resolution.
 Downstream features include: tumour cell differentiation state (luminal A vs. luminal B vs. AR-low vs. NEPC), CD8+/Treg ratio, M1/M2 polarisation index, myCAF/iCAF ratio, and ligand-receptor interaction scores between malignant and immune compartments (CellChat / NicheNet).
 
 2.3b  Normal-Cell Reference Foundation Model (Alternative / Complementary Source)
+
 Rationale:
 A key limitation of tumour-derived scRNA-Seq is that it requires fresh or adequately cryopreserved tissue — often unavailable from archival FFPE biopsy material, which constitutes the majority of prostate cancer specimens in clinical practice. An important alternative is to use a foundation model pretrained exclusively on normal human cells, then apply it to characterise tumour cells by measuring their deviation from normality rather than their absolute transcriptional state.
 This approach is conceptually powerful: cancerous transformation is, by definition, a departure from normal cellular identity. A model that deeply encodes normal prostate epithelial cell biology — including the transcriptional programmes governing luminal differentiation, AR-regulated secretory function, basal-to-luminal maturation, and cell cycle quiescence — can serve as a fixed reference frame against which pathological states are measured.
