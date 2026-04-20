@@ -1,6 +1,6 @@
 Prostate-MTI: A Multimodal AI Framework for Prostate Cancer Outcome Prediction
 Technical Overview for Biological Scientists and Clinicians
-April 2026
+April 16. 2026 by Josh Kim
 
 1. Motivation and Clinical Context
 Prostate cancer exhibits profound molecular and clinical heterogeneity that current risk stratification tools — ISUP grade groups, PSA kinetics, CAPRA scores, and nomograms — only partially capture. Patients with identical Gleason scores and clinical staging frequently diverge dramatically in their trajectories: one remains indolent for decades, another develops castration-resistant disease within two years. This divergence is encoded in the tumour's molecular architecture at multiple biological scales simultaneously.
