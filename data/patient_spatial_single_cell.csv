@@ -1,0 +1,10 @@
+patient_id,spot_id,x_coord,y_coord,cell_type,exp_ASCL1,exp_EZH2,exp_SYP
+PT_001,spot_1,10,20,Neuroendocrine,4.5,3.8,5.1
+PT_001,spot_2,11,21,Neuroendocrine,4.8,4.0,4.9
+PT_001,spot_3,12,22,Epithelial,0.2,1.1,0.3
+PT_002,spot_1,10,20,Epithelial,0.1,0.5,0.1
+PT_002,spot_2,11,21,Epithelial,0.0,0.4,0.2
+PT_002,spot_3,12,22,Adeno_Cancer,1.1,2.1,0.8
+PT_003,spot_1,10,20,Neuroendocrine,5.2,4.5,5.8
+PT_003,spot_2,11,21,Neuroendocrine,5.5,4.8,6.0
+PT_003,spot_3,12,22,Neuroendocrine,5.0,4.2,5.5

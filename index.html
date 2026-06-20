@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Precision Prostate Cancer Profiler</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://cdn.plot.ly/plotly-2.24.1.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 p-6">
+
+    <div class="max-w-7xl mx-auto">
+        <header class="mb-8 border-b border-slate-700 pb-4">
+            <h1 class="text-3xl font-bold text-emerald-400">Multi-Omics Real-time Profiler <span class="text-sm font-normal text-slate-400">v1.1 (Static Core)</span></h1>
+            <p class="text-slate-400 mt-1">NEPC Transition & Drug Resistance Optimization Engine (AI Vectorizable Structure)</p>
+        </header>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <!-- Left: Clinical Panel -->
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700">
+                <h2 class="text-xl font-semibold mb-4 text-slate-200">환자 프로필 선택</h2>
+                <div class="mb-4">
+                    <label class="block text-xs text-slate-400 mb-1">Select Patient ID</label>
+                    <select id="patientSelect" class="w-full bg-slate-700 border border-slate-600 rounded p-2 text-white">
+                        <!-- CSV 데이터를 로드하면 동적으로 채워집니다 -->
+                        <option value="">데이터 로딩 중...</option>
+                    </select>
+                </div>
+
+                <div class="space-y-4 mt-6">
+                    <div class="p-4 bg-slate-900/50 rounded-lg">
+                        <span class="text-xs text-slate-400 block">NEPC Score (Transition Risk)</span>
+                        <span id="nepcScore" class="text-2xl font-black text-rose-500">-</span>
+                    </div>
+                    <div class="p-4 bg-slate-900/50 rounded-lg">
+                        <span class="text-xs text-slate-400 block">Current Treatment</span>
+                        <span id="currentDrug" class="text-lg font-bold text-amber-400">-</span>
+                    </div>
+                    <div class="p-4 bg-slate-900/50 rounded-lg">
+                        <span class="text-xs text-slate-400 block">Predicted Survival</span>
+                        <span id="survivalMonths" class="text-2xl font-black text-emerald-400">-</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Right: Visium Spatial Panel -->
+            <div class="bg-slate-800 p-6 rounded-xl border border-slate-700 lg:col-span-2">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-xl font-semibold text-slate-200">Visium Spatial Expression Scatter</h2>
+                    <span class="text-xs bg-slate-700 px-2 py-1 rounded text-slate-300">Marker: ASCL1</span>
+                </div>
+                <div id="spatialPlot" class="w-full h-96 bg-slate-900 rounded-lg"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 전역 상태 저장 객체
+        let clinicalData = [];
+        let spatialData = [];
+
+        // 데이터 로드 엔진 (PapaParse 사용)
+        async function initProfiler() {
+            try {
+                // CSV 파일 파싱
+                const clinicalRes = await fetch('data/patient_clinical_survival.csv').then(r => r.text());
+                const spatialRes = await fetch('data/patient_spatial_single_cell.csv').then(r => r.text());
+
+                clinicalData = Papa.parse(clinicalRes, { header: true }).data.filter(row => row.patient_id);
+                spatialData = Papa.parse(spatialRes, { header: true }).data.filter(row => row.patient_id);
+
+                // 셀렉트 박스 업데이트
+                const selector = document.getElementById('patientSelect');
+                selector.innerHTML = '';
+                clinicalData.forEach(p => {
+                    const opt = document.createElement('option');
+                    opt.value = p.patient_id;
+                    opt.textContent = `${p.patient_id} (Score: ${p.nepc_score})`;
+                    selector.appendChild(opt);
+                });
+
+                // 초기 데이터 렌더링
+                if(clinicalData.length > 0) {
+                    updateDashboard(clinicalData[0].patient_id);
+                }
+
+                selector.addEventListener('change', (e) => updateDashboard(e.target.value));
+
+            } catch (error) {
+                console.error("데이터 로드 실패. 로컬 서버(Live Server 등) 환경에서 구동해 주세요.", error);
+            }
+        }
+
+        function updateDashboard(patientId) {
+            // 1. 임상 정보 업데이트
+            const patient = clinicalData.find(p => p.patient_id === patientId);
+            if (patient) {
+                document.getElementById('nepcScore').innerText = patient.nepc_score;
+                document.getElementById('currentDrug').innerText = `${patient.current_drug} (Effect: ${patient.drug_effect_score})`;
+                document.getElementById('survivalMonths').innerText = `${patient.survival_months} Months (${patient.status === '1' ? 'Deceased' : 'Censored'})`;
+            }
+
+            // 2. Spatial Plot 데이터 필터링 및 렌더링
+            const spots = spatialData.filter(s => s.patient_id === patientId);
+            
+            const trace = {
+                x: spots.map(s => parseFloat(s.x_coord)),
+                y: spots.map(s => parseFloat(s.y_coord)),
+                mode: 'markers',
+                type: 'scatter',
+                text: spots.map(s => `${s.cell_type} | SYP: ${s.exp_SYP}`),
+                marker: {
+                    size: 14,
+                    color: spots.map(s => parseFloat(s.exp_ASCL1)),
+                    colorscale: 'Jet',
+                    showscale: true,
+                    colorbar: { title: 'ASCL1 Exp', titlefont: {color: '#fff'}, tickfont: {color: '#fff'} }
+                }
+            };
+
+            const layout = {
+                paper_bgcolor: 'rgba(0,0,0,0)',
+                plot_bgcolor: 'rgba(0,0,0,0)',
+                margin: {l: 40, r: 40, b: 40, t: 10},
+                xaxis: { gridcolor: '#334155', tickfont: {color: '#94a3b8'} },
+                yaxis: { gridcolor: '#334155', tickfont: {color: '#94a3b8'} }
+            };
+
+            Plotly.newPlot('spatialPlot', [trace], layout);
+        }
+
+        // 문서 로드 완료 시 구동
+        document.addEventListener('DOMContentLoaded', initProfiler);
+    </script>
+</body>
+</html>

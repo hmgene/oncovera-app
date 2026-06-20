@@ -1,0 +1,4 @@
+patient_id,age,stage,nepc_score,current_drug,drug_effect_score,survival_months,status
+PT_001,68,StageIV,0.85,Enzalutamide,0.12,14,1
+PT_002,72,StageIII,0.15,Abiraterone,0.78,45,0
+PT_003,61,StageIV,0.92,Docetaxel,0.05,8,1
