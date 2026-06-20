@@ -1,7 +1,0 @@
-fastapi
-uvicorn[standard]
-numpy
-pydantic
-pandas
-neo4j
-python-dotenv
