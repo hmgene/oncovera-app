@@ -1,4 +1,5 @@
 # CPDR Lab Review: Strategic Relevance to Oncovera
+written by Jon - 2026-06-20
 
 I reviewed the six laboratories listed by CPDR—Ellis, Shafi, Su, Schafer, Tan, and Shrestha—along with CPDR’s Epidemiology Research Program and biorepository. 
 
