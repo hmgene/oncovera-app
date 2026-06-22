@@ -1,0 +1,4 @@
+# config.example.yaml
+entrez_email: "human.gim@gmail.com"
+entrez_api_key: "YOUR_NCBI_API_KEY_OPTIONAL"
+
