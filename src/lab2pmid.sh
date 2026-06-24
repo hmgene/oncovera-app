@@ -22,7 +22,7 @@ cat "$MD_FILE" | perl -e ' use strict; use warnings;
             print $_, "\n";
         }
     }
-' "$pmids" > $MD_FILE.tmp; mv $MD_FILE.tmp $MD_FILE
+' "$pmid" > $MD_FILE.tmp; mv $MD_FILE.tmp $MD_FILE
 echo "Updated $MD_FILE with new PMIDs."
 
 
